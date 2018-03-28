@@ -1,16 +1,14 @@
 <?php
 /**
- * @copyright Copyright (c) 2016 Green World FinTech Service Co., Ltd. (https://www.ecpay.com.tw)
- * @version 1.1.0911
- * 
- * Plugin Name: WooCommerce ECPay_Invoice
+ * @copyright Copyright (c) 2018 Green World FinTech Service Co., Ltd. (https://www.ecpay.com.tw)
+ * @version 1.1.180315
+ * ECPay Invoice Gateway
+ * Plugin Name:  ECPay Invoice for WooCommerce
  * Plugin URI: https://www.ecpay.com.tw
- * Description: ECPay Invoice For WooCommerce
- * Author: ECPay Green World FinTech Service Co., Ltd. 
- * Author URI: https://www.ecpay.com.tw
- * Version: V1.1.0911
- * Text Domain: woocommerce-ecpayinvoice
- * Domain Path: /i18n/languages/
+ * Description: ECPay Integration Invoice Gateway for WooCommerce
+ * Version: 1.1.180315
+ * Author: Green World FinTech Service Co., Ltd. 
+ * Author URI: techsupport@ecpay.com.tw
  */
 
 defined( 'ABSPATH' ) or exit;
@@ -432,8 +430,15 @@ class WC_ECPayinvoice {
                 $nOrder_Status 	= $oOrder_Obj->get_status($post->ID);
                 $aOrder_Info 	= get_post_meta($post->ID);
 
-                // 付款成功次數 第一次付款或沒有此欄位則設定為空值
-	       	$nTotalSuccessTimes = ( isset($aOrder_Info['_total_success_times'][0]) && $aOrder_Info['_total_success_times'][0] == '' ) ? '' :  $aOrder_Info['_total_success_times'][0] ;
+                // 付款成功次數 第一次付款或沒有此欄位則設定為空值 
+                if(!isset($aOrder_Info['_total_success_times'][0]))
+                {
+                	$nTotalSuccessTimes = '' ;	
+                }
+                else
+                {
+                	$nTotalSuccessTimes = $aOrder_Info['_total_success_times'][0] ;
+                }
 
                 $aConfig_Invoice = get_option('wc_ecpayinvoice_active_model') ;
 
@@ -483,7 +488,7 @@ class WC_ECPayinvoice {
 	       	if($sMode == 'manual')
 	       	{
 	       		
-			if( $aOrder_Info['_payment_method'][0] == 'allpay_dca' || $aOrder_Info['_payment_method'][0] == 'ecpay_dca' ) // 定期定額 20170922 wesley
+			if( ( !isset($aOrder_Info['_payment_method'][0]) || $aOrder_Info['_payment_method'][0] == 'allpay_dca' ) || $aOrder_Info['_payment_method'][0] == 'ecpay_dca' ) // 定期定額 20170922 wesley
 			{
 				$_ecpay_invoice_status = '_ecpay_invoice_status'.$nTotalSuccessTimes ;
 
@@ -502,7 +507,7 @@ class WC_ECPayinvoice {
 	       	}
 	       	elseif($sMode == 'auto')
 	       	{
-	       		if( $aOrder_Info['_payment_method'][0] == 'allpay_dca' || $aOrder_Info['_payment_method'][0] == 'ecpay_dca' ) // 定期定額 20170922 wesley
+if( ( !isset($aOrder_Info['_payment_method'][0]) || $aOrder_Info['_payment_method'][0] == 'allpay_dca' ) || $aOrder_Info['_payment_method'][0] == 'ecpay_dca' )  // 定期定額 20170922 wesley
 			{
 				$_ecpay_invoice_status = '_ecpay_invoice_status'.$nTotalSuccessTimes ;
 

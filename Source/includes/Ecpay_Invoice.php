@@ -1,7 +1,9 @@
 <?php
 /*
 電子發票SDK
-版本:V1.0.0315
+版本:V1.0.180302
+*修正itemprice允許金額為0
+*修正itemamount允許金額為0
 @author Wesley
 */
 
@@ -276,7 +278,8 @@ class EcpayInvoice
 			'Notify' => '',
 			'InvoiceTag' => '',
 			'Notified' => '',
-			'BarCode' => ''
+			'BarCode' => '',
+			'OnLine' => true
         	);
 
         	$this->TimeStamp = time();
@@ -528,7 +531,8 @@ class ECPay_INVOICE
 		'ItemRemark'		=>'',
 		'CheckMacValue'		=>'',
 		'InvType'		=>'',
-		'vat' 			=>''
+		'vat' 			=>'',
+		'OnLine' 		=> true
         	);
 
     	// 需要做urlencode的參數
@@ -675,7 +679,7 @@ class ECPay_INVOICE
         	// *若列印註記 = '1' (列印)時，則客戶名稱須有值
         	if ($arParameters['Print'] == EcpayPrintMark::Yes)
 		{
-			if (mb_strlen($arParameters['CustomerName'], 'UTF-8') == 0)
+			if (mb_strlen($arParameters['CustomerName'], 'UTF-8') == 0 && $arParameters['OnLine'])
 			{
 				array_push($arErrors, "7:CustomerName is required.");
 			}
@@ -691,7 +695,7 @@ class ECPay_INVOICE
 		// *若列印註記 = '1' (列印)時，則客戶地址須有值
 		if ($arParameters['Print'] == EcpayPrintMark::Yes)
 		{
-			if (mb_strlen($arParameters['CustomerAddr'], 'UTF-8') == 0)
+			if (mb_strlen($arParameters['CustomerAddr'], 'UTF-8') == 0 && $arParameters['OnLine'])
 			{
 				array_push($arErrors, "8:CustomerAddr is required.");
 			}
@@ -737,7 +741,7 @@ class ECPay_INVOICE
 		// 9. 10. 
 		
 		// *若客戶手機號碼為空值時，則客戶電子信箱不可為空值 
-		if (strlen($arParameters['CustomerPhone']) == 0 && strlen($arParameters['CustomerEmail']) == 0)
+		if (strlen($arParameters['CustomerPhone']) == 0 && strlen($arParameters['CustomerEmail']) == 0 && $arParameters['OnLine'])
 		{
 			array_push($arErrors, "9-10:CustomerPhone or CustomerEmail is required.");
 		}	
@@ -788,7 +792,19 @@ class ECPay_INVOICE
 			{
               			array_push($arErrors, "12:CustomerIdentifier Print should be Yes.");
 			}
-		}	
+		}
+		// 線下列印判斷
+		// 1200079當線下廠商開立發票無載具且無統一編號時，必須列印。
+		if($arParameters['OnLine'] === false)
+		{
+			if( ($arParameters['CarruerType'] == EcpayCarruerType::None ) && strlen($arParameters['CustomerIdentifier']) == 0 )
+			{
+				if ($arParameters['Print'] != EcpayPrintMark::Yes)
+				{
+	              			array_push($arErrors, "12:Offline Print should be Yes.");
+				}
+			}
+		}
 		
 		// 13.捐贈註記 Donation
 		
@@ -906,7 +922,7 @@ class ECPay_INVOICE
 	        	// 檢查是否存在保留字元 '|'
 			$bFind_Tag 		= true;
 			$bError_Tag 		= false;
-			
+
 			foreach($arParameters['Items'] as $key => $value)
 			{
 				$bFind_Tag = strpos($value['ItemName'], '|') ;
@@ -934,7 +950,7 @@ class ECPay_INVOICE
 				}
 				
 				$bFind_Tag = strpos($value['ItemPrice'], '|') ;
-				if($bFind_Tag != false || empty($value['ItemPrice']))
+				if($bFind_Tag != false || $value['ItemPrice'] === '')
 				{
 					$bError_Tag = true ;
 					array_push($arErrors, '23:Invalid ItemPrice.');
@@ -950,7 +966,7 @@ class ECPay_INVOICE
 				}
 				
 				$bFind_Tag = strpos($value['ItemAmount'], '|') ;
-				if($bFind_Tag != false || empty($value['ItemAmount']))
+				if($bFind_Tag != false || $value['ItemAmount'] === '' )
 				{
 					$bError_Tag = true ;
 					array_push($arErrors, '25:Invalid ItemAmount.');
@@ -1035,6 +1051,9 @@ class ECPay_INVOICE
 
         	// 刪除items 
         	unset($arParameters['Items']);
+
+        	// 刪除SDK自訂義參數
+        	unset($arParameters['OnLine']);
 
         	return $arParameters ;
     	}
@@ -2889,7 +2908,7 @@ if(!class_exists('ECPay_CheckMacValue'))
 					$sMacValue .= '&' . $key . '=' . $value ;
 				}
 
-				$sMacValue .= '&HashIV=' . $HashIV ;    
+				$sMacValue .= '&HashIV=' . $HashIV ;
 
 				// URL Encode編碼     
 				$sMacValue = urlencode($sMacValue); 
