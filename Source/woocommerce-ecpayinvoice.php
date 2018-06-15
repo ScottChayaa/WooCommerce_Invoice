@@ -1,14 +1,16 @@
 <?php
 /**
- * @copyright Copyright (c) 2018 Green World FinTech Service Co., Ltd. (https://www.ecpay.com.tw)
+ * @copyright Copyright (c) 2016 Green World FinTech Service Co., Ltd. (https://www.ecpay.com.tw)
  * @version 1.1.180315
- * ECPay Invoice Gateway
- * Plugin Name:  ECPay Invoice for WooCommerce
+ * 
+ * Plugin Name: WooCommerce ECPay_Invoice
  * Plugin URI: https://www.ecpay.com.tw
- * Description: ECPay Integration Invoice Gateway for WooCommerce
- * Version: 1.1.180315
- * Author: Green World FinTech Service Co., Ltd. 
- * Author URI: techsupport@ecpay.com.tw
+ * Description: ECPay Invoice For WooCommerce
+ * Author: ECPay Green World FinTech Service Co., Ltd. 
+ * Author URI: https://www.ecpay.com.tw
+ * Version: V1.1.180315
+ * Text Domain: woocommerce-ecpayinvoice
+ * Domain Path: /i18n/languages/
  */
 
 defined( 'ABSPATH' ) or exit;
@@ -106,7 +108,7 @@ class WC_ECPayinvoice {
 
 
 	/** plugin version number */
-	const VERSION = 'v.1.1.0222';
+	const VERSION = 'v.1.1.180606';
 
 	/** @var \WC_ECPayinvoice single instance of this plugin */
 	protected static $instance;
@@ -287,7 +289,7 @@ class WC_ECPayinvoice {
 					identifier = $("#billing_customer_identifier").val();
 
 					// 無載具
-					if (carruer_type == '0') {
+					if (carruer_type == '0' || carruer_type == '1') {
 						$("#billing_carruer_num_field").slideUp();
 						$("#billing_carruer_num").val("");
 					} else if (carruer_type == '2') {
@@ -340,6 +342,7 @@ class WC_ECPayinvoice {
 			'required'      => false,
 			'options' 	=> array(
 				'0' => '無載具',
+				'1' => '綠界載具',
 				'2' => '自然人憑證',
 				'3' => '手機條碼'
 			)
@@ -507,7 +510,7 @@ class WC_ECPayinvoice {
 	       	}
 	       	elseif($sMode == 'auto')
 	       	{
-if( ( !isset($aOrder_Info['_payment_method'][0]) || $aOrder_Info['_payment_method'][0] == 'allpay_dca' ) || $aOrder_Info['_payment_method'][0] == 'ecpay_dca' )  // 定期定額 20170922 wesley
+			if( ( !isset($aOrder_Info['_payment_method'][0]) || $aOrder_Info['_payment_method'][0] == 'allpay_dca' ) || $aOrder_Info['_payment_method'][0] == 'ecpay_dca' )  // 定期定額 20170922 wesley
 			{
 				$_ecpay_invoice_status = '_ecpay_invoice_status'.$nTotalSuccessTimes ;
 
@@ -548,6 +551,8 @@ if( ( !isset($aOrder_Info['_payment_method'][0]) || $aOrder_Info['_payment_metho
 	 		$sOrder_Email		= $aOrder_Info['email'] ; 					// EMAIL
 	 		$sOrder_Phone		= $aOrder_Info['phone'] ; 					// Phone
 
+	 		$sCustomer_Name 	= $sOrder_User_Name ; 						//  
+
 	 		$sCustomerIdentifier 	= get_post_meta($nOrder_Id, '_billing_customer_identifier', true) ; // 統一編號	
 
 	 		$sInvoice_Type		= get_post_meta($nOrder_Id, '_billing_invoice_type', true) ; 
@@ -563,11 +568,21 @@ if( ( !isset($aOrder_Info['_payment_method'][0]) || $aOrder_Info['_payment_metho
 	 		if( !empty($sCustomerIdentifier) )
 	 		{
 				$nPrint = 1 ;
+
+				// 有統一編號 則取得公司名稱
+				$sCompany_Name 	= get_post_meta($nOrder_Id, '_billing_company', true); 		// 公司名稱
+				$sCustomer_Name = (!empty($sCompany_Name)) ? $sCompany_Name : $sCustomer_Name ;
 	 		}
 
 	 		$LoveCode 		= get_post_meta($nOrder_Id, '_billing_love_code', true); 		// 愛心碼
 	 		$nCarruerType 		= get_post_meta($nOrder_Id, '_billing_carruer_type', true); 		// 載具
 	 		$nCarruerType 		= ($nCarruerType == 0) ? '' : $nCarruerType ;
+
+	 		// 無載具 強制列印
+	 		if(empty($nCarruerType))
+	 		{
+	 			$nPrint = 1 ;
+	 		}
 
 	 		$nCarruerNum		= get_post_meta($nOrder_Id, '_billing_carruer_num', true) ; 		// 載具編號
 
@@ -695,7 +710,7 @@ if( ( !isset($aOrder_Info['_payment_method'][0]) || $aOrder_Info['_payment_metho
 				$ecpay_invoice->Send['RelateNumber'] 			= $RelateNumber ;
 				$ecpay_invoice->Send['CustomerID'] 			= '' ;
 				$ecpay_invoice->Send['CustomerIdentifier'] 		= $sCustomerIdentifier ;
-				$ecpay_invoice->Send['CustomerName'] 			= $sOrder_User_Name ;
+				$ecpay_invoice->Send['CustomerName'] 			= $sCustomer_Name ;
 				$ecpay_invoice->Send['CustomerAddr'] 			= $sOrder_Address ;
 				$ecpay_invoice->Send['CustomerPhone'] 			= $sOrder_Phone ;
 				$ecpay_invoice->Send['CustomerEmail'] 			= $sOrder_Email ;
