@@ -1,14 +1,14 @@
 <?php
 /**
  * @copyright Copyright (c) 2016 Green World FinTech Service Co., Ltd. (https://www.ecpay.com.tw)
- * @version 1.1.180606
+ * @version 1.1.180315
  * 
  * Plugin Name: WooCommerce ECPay_Invoice
  * Plugin URI: https://www.ecpay.com.tw
  * Description: ECPay Invoice For WooCommerce
  * Author: ECPay Green World FinTech Service Co., Ltd. 
  * Author URI: https://www.ecpay.com.tw
- * Version: V1.1.180606
+ * Version: V1.1.180315
  * Text Domain: woocommerce-ecpayinvoice
  * Domain Path: /i18n/languages/
  */
@@ -558,9 +558,9 @@ class WC_ECPayinvoice {
 	 		$sInvoice_Type		= get_post_meta($nOrder_Id, '_billing_invoice_type', true) ; 
 
 	 		// 捐贈
-	 		$nDonation 		= ( $sInvoice_Type == 'd' ) ? 1 : 2 ; 
+	 		$nDonation 		= ( $sInvoice_Type == 'd' ) ? 1 : 0 ; 
 
-	 		$nDonation 		= (empty($sCustomerIdentifier)) ? $nDonation : 2 ; // 如果有寫統一發票號碼則無法捐贈
+	 		$nDonation 		= (empty($sCustomerIdentifier)) ? $nDonation : 0 ; // 如果有寫統一發票號碼則無法捐贈
 
 	 		$nPrint 		= 0 ;
 
@@ -579,9 +579,15 @@ class WC_ECPayinvoice {
 	 		$nCarruerType 		= ($nCarruerType == 0) ? '' : $nCarruerType ;
 
 	 		// 無載具 強制列印
-	 		if(empty($nCarruerType))
+	 		if(empty($nCarruerType) )
 	 		{
 	 			$nPrint = 1 ;
+	 		}
+
+	 		// 有捐贈項目 不允許列印
+	 		if($nDonation == 1 )
+	 		{
+	 			$nPrint = 0 ;
 	 		}
 
 	 		$nCarruerNum		= get_post_meta($nOrder_Id, '_billing_carruer_num', true) ; 		// 載具編號
