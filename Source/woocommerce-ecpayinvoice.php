@@ -1,14 +1,14 @@
 <?php
 /**
  * @copyright Copyright (c) 2016 Green World FinTech Service Co., Ltd. (https://www.ecpay.com.tw)
- * @version 1.1.180315
+ * @version 1.1.181023
  * 
  * Plugin Name: WooCommerce ECPay_Invoice
  * Plugin URI: https://www.ecpay.com.tw
  * Description: ECPay Invoice For WooCommerce
  * Author: ECPay Green World FinTech Service Co., Ltd. 
  * Author URI: https://www.ecpay.com.tw
- * Version: V1.1.180315
+ * Version: V1.1.181023
  * Text Domain: woocommerce-ecpayinvoice
  * Domain Path: /i18n/languages/
  */
