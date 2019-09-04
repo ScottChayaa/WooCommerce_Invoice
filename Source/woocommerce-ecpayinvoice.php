@@ -1,14 +1,14 @@
 <?php
 /**
  * @copyright Copyright (c) 2016 Green World FinTech Service Co., Ltd. (https://www.ecpay.com.tw)
- * @version 1.1.181023
- * 
+ * @version 1.1.190816
+ *
  * Plugin Name: WooCommerce ECPay_Invoice
  * Plugin URI: https://www.ecpay.com.tw
  * Description: ECPay Invoice For WooCommerce
- * Author: ECPay Green World FinTech Service Co., Ltd. 
+ * Author: ECPay Green World FinTech Service Co., Ltd.
  * Author URI: https://www.ecpay.com.tw
- * Version: V1.1.181023
+ * Version: 1.1.190816
  * Text Domain: woocommerce-ecpayinvoice
  * Domain Path: /i18n/languages/
  */
@@ -119,6 +119,8 @@ class WC_ECPayinvoice {
 	/** var array the active filters */
 	public $filters;
 
+	/**	功能開關 */
+	public $my_custom_features_switch;
 
 	/**
 	 * Initializes the plugin
@@ -147,16 +149,21 @@ class WC_ECPayinvoice {
 		//add_action( 'woocommerce_init', array( $this, 'load_model' ) );
 
 		// 後臺手動開立按鈕
-                add_action( 'woocommerce_admin_order_data_after_order_details', array(&$this,'action_woocommerce_admin_generate_invoice_manual' )); 
+		add_action( 'woocommerce_admin_order_data_after_order_details', array(&$this,'action_woocommerce_admin_generate_invoice_manual' ));
 
-                // 前台統一編號 載具資訊填寫
-              	add_filter( 'woocommerce_checkout_fields', array(&$this, 'ecpay_invoice_info_fields' )); 
+		// 前台統一編號 載具資訊填寫
+		add_filter( 'woocommerce_checkout_fields', array(&$this, 'ecpay_invoice_info_fields' ));
 
-              	// 發票自動開立程序(需綁ECPAY金流)
-              	add_action('ecpay_auto_invoice', array(&$this, 'ecpay_auto_invoice' ),10 ,3); 
+		// 發票自動開立程序(需綁ECPAY金流)
+		add_action('ecpay_auto_invoice', array(&$this, 'ecpay_auto_invoice' ),10 ,3);
 
-		add_action('woocommerce_checkout_process', array(&$this,'my_custom_checkout_field_process' )); 
+		add_action('woocommerce_checkout_process', array(&$this,'my_custom_checkout_field_process' ));
 
+		// 功能開關設定
+		$this->my_custom_features_switch = array(
+			'billing_love_code_api_check' => true,
+			'billing_carruer_num_api_check' => true
+		);
 	}
 
 
@@ -209,7 +216,6 @@ class WC_ECPayinvoice {
 		//load_plugin_textdomain( 'woocommerce-ecpayinvoice', false, dirname( plugin_basename( __FILE__ ) ) . '/i18n/languages' );
 	}
 
-
 	/**
 	 * Checks if WooCommerce is active
 	 *
@@ -228,18 +234,17 @@ class WC_ECPayinvoice {
 			if ( (strpos($value,'/woocommerce.php') !== false))
                         {
                                 $woo_active = true;
-                        }			
+                        }
 		}
 
 		return in_array( 'woocommerce/woocommerce.php', $active_plugins ) || array_key_exists( 'woocommerce/woocommerce.php', $active_plugins ) || $woo_active;
 	}
 
-
 	/** Frontend methods ******************************************************/
 
 
 	// 統一編號 捐贈愛心碼 填寫
-	function ecpay_invoice_info_fields($fields) { 
+	function ecpay_invoice_info_fields($fields) {
 
 		?>
 
@@ -308,10 +313,10 @@ class WC_ECPayinvoice {
 				});
 			});
         </script>
-        
+
 		<?php
 
-		// 
+		//
 		$fields['billing']['billing_invoice_type'] = array(
 			'type' 		=> 'select',
 			'label'         => '發票開立',
@@ -360,71 +365,154 @@ class WC_ECPayinvoice {
 
 	function my_custom_checkout_field_process()
 	{
-	    // Check if set, if its not set add an error.
-		
-	    	if ( isset($_POST['billing_invoice_type']) && $_POST['billing_invoice_type'] == 'c' && $_POST['billing_customer_identifier'] == '' )
-	    	{
-	        	wc_add_notice( __( '請輸入統一編號' ), 'error' );
-	    	}
+		// Check if set, if its not set add an error.
+
+    	if ( isset($_POST['billing_invoice_type']) && $_POST['billing_invoice_type'] == 'c' && $_POST['billing_customer_identifier'] == '' )
+    	{
+        	wc_add_notice( __( '請輸入統一編號' ), 'error' );
+    	}
 
 		if ( isset($_POST['billing_invoice_type']) && $_POST['billing_invoice_type'] == 'd' && $_POST['billing_love_code'] == '' )
-	        {
-	        	wc_add_notice( __( '請輸入愛心碼' ), 'error' );
-	        }
+        {
+        	wc_add_notice( __( '請輸入愛心碼' ), 'error' );
+        }
 
-	        if ( isset($_POST['billing_carruer_type']) && $_POST['billing_carruer_type'] == '2' && $_POST['billing_carruer_num'] == '' )
-	        {
-	        	wc_add_notice( __( '請輸入自然人憑證載具編號' ), 'error' );
-	        }
+        if ( isset($_POST['billing_carruer_type']) && $_POST['billing_carruer_type'] == '2' && $_POST['billing_carruer_num'] == '' )
+        {
+        	wc_add_notice( __( '請輸入自然人憑證載具編號' ), 'error' );
+        }
 
-	        if ( isset($_POST['billing_carruer_type']) && $_POST['billing_carruer_type'] == '3' && $_POST['billing_carruer_num'] == '' )
-	        {
-	        	wc_add_notice( __( '請輸入手機條碼載具編號' ), 'error' );
-	        }
+        if ( isset($_POST['billing_carruer_type']) && $_POST['billing_carruer_type'] == '3' && $_POST['billing_carruer_num'] == '' )
+        {
+        	wc_add_notice( __( '請輸入手機條碼載具編號' ), 'error' );
+        }
 
-	    	// 統一編號格式判斷
-	        if ( isset($_POST['billing_invoice_type']) && $_POST['billing_invoice_type'] == 'c' && $_POST['billing_customer_identifier'] != '' )
-	        {
-	        	if ( !preg_match('/^[0-9]{8}$/', $_POST['billing_customer_identifier']) )
+    	// 統一編號格式判斷
+        if ( isset($_POST['billing_invoice_type']) && $_POST['billing_invoice_type'] == 'c' && $_POST['billing_customer_identifier'] != '' )
+        {
+        	if ( !preg_match('/^[0-9]{8}$/', $_POST['billing_customer_identifier']) )
 			{
-              			wc_add_notice( __( '統一編號格式錯誤' ), 'error' );
+      			wc_add_notice( __( '統一編號格式錯誤' ), 'error' );
 			}
-	        }
+        }
 
-	        // 愛心碼格式判斷
-	        if ( isset($_POST['billing_invoice_type']) && $_POST['billing_invoice_type'] == 'd' && $_POST['billing_love_code'] != '' )
-	        {
-	        	if ( !preg_match('/^([xX]{1}[0-9]{2,6}|[0-9]{3,7})$/', $_POST['billing_love_code']) )
+        // 愛心碼格式判斷
+        if ( isset($_POST['billing_invoice_type']) && $_POST['billing_invoice_type'] == 'd' && $_POST['billing_love_code'] != '' )
+        {
+        	if ( !preg_match('/^([xX]{1}[0-9]{2,6}|[0-9]{3,7})$/', $_POST['billing_love_code']) )
 			{
-              			wc_add_notice( __( '愛心碼格式錯誤' ), 'error' );
-			}
-	        }
+      			wc_add_notice( __( '愛心碼格式錯誤' ), 'error' );
+			}else{
 
-	        // 自然人憑證格式判斷
-	        if ( isset($_POST['billing_carruer_type']) && $_POST['billing_carruer_type'] == '2' && $_POST['billing_carruer_num'] != '' )
-	        {
-	        	if ( !preg_match('/^[a-zA-Z]{2}\d{14}$/', $_POST['billing_carruer_num']) )
+				// 呼叫SDK 捐贈碼驗證
+				if($this->my_custom_features_switch['billing_love_code_api_check']){
+					try
+					{
+						// 1.載入SDK程式
+						$ecpay_invoice 		= new EcpayInvoice ;
+
+						// 2.介接參數設定
+						$aConfig_Invoice 	= get_option('wc_ecpayinvoice_active_model') ;
+						$Invoice_Url 		= ($aConfig_Invoice['wc_ecpay_invoice_testmode'] == 'enable_testmode') ? 'https://einvoice-stage.ecpay.com.tw/Query/CheckLoveCode'  : 'https://einvoice.ecpay.com.tw/Query/CheckLoveCode' ;
+						$MerchantID 		= $aConfig_Invoice['wc_ecpay_invoice_merchantid'] ;
+						$HashKey 			= $aConfig_Invoice['wc_ecpay_invoice_hashkey'] ;
+						$HashIV 			= $aConfig_Invoice['wc_ecpay_invoice_hashiv'] ;
+						$LoveCode 			= $_POST['billing_love_code'];
+
+						// 3.寫入基本介接參數
+						$ecpay_invoice->Invoice_Method 		= 'CHECK_LOVE_CODE' ;
+						$ecpay_invoice->Invoice_Url 		= $Invoice_Url ;
+						$ecpay_invoice->MerchantID 		= $MerchantID ;
+						$ecpay_invoice->HashKey 		= $HashKey ;
+						$ecpay_invoice->HashIV 			= $HashIV ;
+
+						// 4.寫入發票傳送資訊
+						$ecpay_invoice->Send['LoveCode'] 	= $LoveCode;
+
+						// 5.送出
+						$aReturn_Info = $ecpay_invoice->Check_Out();
+
+						// 6.錯誤訊息
+						if(!isset($aReturn_Info['RtnCode']) || $aReturn_Info['RtnCode'] != 1 || $aReturn_Info['IsExist'] == 'N')
+						{
+							wc_add_notice( __( '請確認輸入的愛心碼是否正確，或選擇其他發票開立方式('.$aReturn_Info['RtnCode'].')' ), 'error' );
+						}
+					}
+					catch (Exception $e)
+					{
+						// 例外錯誤處理。
+						$sMsg = $e->getMessage();
+					}
+				}
+			}
+        }
+
+        // 自然人憑證格式判斷
+        if ( isset($_POST['billing_carruer_type']) && $_POST['billing_carruer_type'] == '2' && $_POST['billing_carruer_num'] != '' )
+        {
+        	if ( !preg_match('/^[a-zA-Z]{2}\d{14}$/', $_POST['billing_carruer_num']) )
 			{
-              			wc_add_notice( __( '自然人憑證格式錯誤' ), 'error' );
+      			wc_add_notice( __( '自然人憑證格式錯誤' ), 'error' );
 			}
-	        }
+        }
 
-	        // 手機載具格式判斷
-	        if ( isset($_POST['billing_carruer_type']) && $_POST['billing_carruer_type'] == '3' && $_POST['billing_carruer_num'] != '' )
-	        {
-	        	if ( !preg_match('/^\/{1}[0-9a-zA-Z+-.]{7}$/', $_POST['billing_carruer_num']) )
+        // 手機載具格式判斷
+        if ( isset($_POST['billing_carruer_type']) && $_POST['billing_carruer_type'] == '3' && $_POST['billing_carruer_num'] != '' )
+        {
+        	if ( !preg_match('/^\/{1}[0-9a-zA-Z+-.]{7}$/', $_POST['billing_carruer_num']) )
 			{
-              			wc_add_notice( __( '手機條碼載具格式錯誤' ), 'error' );
-			}
-	        }
+      			wc_add_notice( __( '手機條碼載具格式錯誤' ), 'error' );
+			}else {
 
+				// 呼叫SDK 手機條碼驗證
+				if($this->my_custom_features_switch['billing_carruer_num_api_check']){
+					try
+				   	{
+						// 1.載入SDK程式
+						$ecpay_invoice = new EcpayInvoice ;
+
+						// 2.介接參數設定
+						$aConfig_Invoice 	= get_option('wc_ecpayinvoice_active_model') ;
+						$Invoice_Url 		= ($aConfig_Invoice['wc_ecpay_invoice_testmode'] == 'enable_testmode') ? 'https://einvoice-stage.ecpay.com.tw/Query/CheckMobileBarCode'  : 'https://einvoice.ecpay.com.tw/Query/CheckMobileBarCode' ;
+						$MerchantID 		= $aConfig_Invoice['wc_ecpay_invoice_merchantid'] ;
+						$HashKey 			= $aConfig_Invoice['wc_ecpay_invoice_hashkey'] ;
+						$HashIV 			= $aConfig_Invoice['wc_ecpay_invoice_hashiv'] ;
+					  	 $BarCode 			= $_POST['billing_carruer_num'];
+
+						// 3.寫入基本介接參數
+						$ecpay_invoice->Invoice_Method 		= 'CHECK_MOBILE_BARCODE' ;
+						$ecpay_invoice->Invoice_Url 		= $Invoice_Url ;
+						$ecpay_invoice->MerchantID 		= $MerchantID ;
+						$ecpay_invoice->HashKey 		= $HashKey ;
+						$ecpay_invoice->HashIV 			= $HashIV ;
+
+						// 4.寫入發票傳送資訊
+						$ecpay_invoice->Send['BarCode'] 	= $BarCode;
+
+						// 5.送出
+						$aReturn_Info = $ecpay_invoice->Check_Out();
+
+						// 6.錯誤訊息
+						if(!isset($aReturn_Info['RtnCode']) || $aReturn_Info['RtnCode'] != 1 || $aReturn_Info['IsExist'] == 'N')
+						{
+							wc_add_notice( __( '請確認輸入的手機條碼載具是否正確，或選擇其他載具類別('.$aReturn_Info['RtnCode'].')' ), 'error' );
+						}
+					}
+					catch (Exception $e)
+					{
+						// 例外錯誤處理。
+						$sMsg = $e->getMessage();
+					}
+				}
+			}
+        }
 	}
 
 
 	/** Admin methods ******************************************************/
 
 	// 後臺手動開立發票按鈕
-	function action_woocommerce_admin_generate_invoice_manual() { 
+	function action_woocommerce_admin_generate_invoice_manual() {
 	 	global $woocommerce, $post;
 
         	// 判斷是否已經開過發票
@@ -433,10 +521,12 @@ class WC_ECPayinvoice {
                 $nOrder_Status 	= $oOrder_Obj->get_status($post->ID);
                 $aOrder_Info 	= get_post_meta($post->ID);
 
-                // 付款成功次數 第一次付款或沒有此欄位則設定為空值 
+                $genInvoice 	= false ;
+
+                // 付款成功次數 第一次付款或沒有此欄位則設定為空值
                 if(!isset($aOrder_Info['_total_success_times'][0]))
                 {
-                	$nTotalSuccessTimes = '' ;	
+                	$nTotalSuccessTimes = '' ;
                 }
                 else
                 {
@@ -445,27 +535,44 @@ class WC_ECPayinvoice {
 
                 $aConfig_Invoice = get_option('wc_ecpayinvoice_active_model') ;
 
+
+                // 判斷是否啟動模組
                 if($aConfig_Invoice['wc_ecpay_invoice_enabled'] == 'enable')
-                {	
-	               
+                {
                 	$_ecpay_invoice_status = '_ecpay_invoice_status'.$nTotalSuccessTimes ;
 
+	                if($aConfig_Invoice['wc_ecpay_invoice_auto'] == 'manual'){
+	                	
+	                	// 尚未開立發票
+	                	if( !isset($aOrder_Info[$_ecpay_invoice_status][0]) || $aOrder_Info[$_ecpay_invoice_status][0] == 0 ){
+	                		
+	                		// 判斷付款方式
+		                	if($aOrder_Info['_payment_method'][0] == 'ecpay_shipping_pay'){
+		                		
+		                		// 貨到付款 訂單產生就出現按鈕
+		                		if( $nOrder_Status == 'ecpay' || $nOrder_Status == 'on-hold'){
+		                			$genInvoice = true ;
+		                		}
 
+		                	}
+		                	else{
+		                		if( $nOrder_Status == 'processing'){
+		                			$genInvoice = true ;
+		                		}
+		                	}	
+	                	}      
+	                }
 
-	                if($aConfig_Invoice['wc_ecpay_invoice_auto'] == 'manual')
+	                if($genInvoice)
 	                {
-		                // 尚未開立發票且訂單狀態為處理中
-		                if( ( !isset($aOrder_Info[$_ecpay_invoice_status][0]) || $aOrder_Info[$_ecpay_invoice_status][0] == 0 ) && $nOrder_Status == 'processing' )
-		                {
-		                	// 產生按鈕
-		                	echo "<p ><input class='button' type='button' id='invoice_button' onclick='send_orderid_to_gen_invoice(".$post->ID.");' value='開立發票' /></p>";
-		                }
+	                	// 產生按鈕
+			        echo "<p class=\"form-field form-field-wide\"><input class='button' type='button' id='invoice_button' onclick='send_orderid_to_gen_invoice(".$post->ID.");' value='開立發票' /></p>";
 	                }
 
 	                if( isset($aOrder_Info[$_ecpay_invoice_status][0]) && $aOrder_Info[$_ecpay_invoice_status][0] == 1 )
 	                {
 	                	// 產生按鈕
-	                	echo "<p ><input class='button' type='button' id='invoice_button_issue_invalid' onclick='send_orderid_to_issue_invalid(".$post->ID.");' value='作廢發票' /></p>";
+	                	echo "<p class=\"form-field form-field-wide\"><input class='button' type='button' id='invoice_button_issue_invalid' onclick='send_orderid_to_issue_invalid(".$post->ID.");' value='作廢發票' /></p>";
 	                }
                 }
 
@@ -474,7 +581,7 @@ class WC_ECPayinvoice {
 
 	// 開立發票
 	function gen_invoice($nOrder_Id, $sMode = 'manual') {
-		
+
 		global $woocommerce, $post;
 
 		$oOrder_Obj 	= new WC_Order($nOrder_Id);
@@ -486,11 +593,11 @@ class WC_ECPayinvoice {
 	       	$nTotalSuccessTimes = ( isset($aOrder_Info['_total_success_times'][0]) && $aOrder_Info['_total_success_times'][0] == '' ) ? '' :  $aOrder_Info['_total_success_times'][0] ;
 
 	       	$bInvoice_Enable = false ;
-	       	$sInvoiceRemark = '' ; 
+	       	$sInvoiceRemark = '' ;
 
 	       	if($sMode == 'manual')
 	       	{
-	       		
+
 			if( ( !isset($aOrder_Info['_payment_method'][0]) || $aOrder_Info['_payment_method'][0] == 'allpay_dca' ) || $aOrder_Info['_payment_method'][0] == 'ecpay_dca' ) // 定期定額 20170922 wesley
 			{
 				$_ecpay_invoice_status = '_ecpay_invoice_status'.$nTotalSuccessTimes ;
@@ -502,10 +609,21 @@ class WC_ECPayinvoice {
 			}
 			else
 			{
-				if( ( !isset($aOrder_Info['_ecpay_invoice_status'][0]) || $aOrder_Info['_ecpay_invoice_status'][0] == 0 ) && $nOrder_Status == 'processing' )
-		        	{
-		        		$bInvoice_Enable = true ;
-		        	}
+				// 判斷超商取貨付款
+				if( $aOrder_Info['_payment_method'][0] == 'ecpay_shipping_pay' )
+				{
+					if( ( !isset($aOrder_Info['_ecpay_invoice_status'][0]) || $aOrder_Info['_ecpay_invoice_status'][0] == 0 ) && ( $nOrder_Status == 'ecpay' || $nOrder_Status == 'on-hold' ) ) 
+			        	{
+			        		$bInvoice_Enable = true ;
+			        	}
+				}
+				else
+				{
+					if( ( !isset($aOrder_Info['_ecpay_invoice_status'][0]) || $aOrder_Info['_ecpay_invoice_status'][0] == 0 ) && $nOrder_Status == 'processing' )
+			        	{
+			        		$bInvoice_Enable = true ;
+			        	}
+				}	
 			}
 	       	}
 	       	elseif($sMode == 'auto')
@@ -531,7 +649,7 @@ class WC_ECPayinvoice {
 	        // 尚未開立發票且訂單狀態為處理中
 	        if($bInvoice_Enable)
 	        {
-	        	
+
 	 		//var_dump($aOrder_Info);
 
 	 		// 取得發票介接參數設定
@@ -540,7 +658,7 @@ class WC_ECPayinvoice {
 	 		$HashKey 		= $aConfig_Invoice['wc_ecpay_invoice_hashkey'] ;
 	 		$HashIV 		= $aConfig_Invoice['wc_ecpay_invoice_hashiv'] ;
 
-	 		
+
 	 		$Invoice_Url 		= '' ;
 
 	 		$nOrder_Amount_Total 	= $oOrder_Obj->get_total(); 					// 訂單總金額
@@ -551,14 +669,14 @@ class WC_ECPayinvoice {
 	 		$sOrder_Email		= $aOrder_Info['email'] ; 					// EMAIL
 	 		$sOrder_Phone		= $aOrder_Info['phone'] ; 					// Phone
 
-	 		$sCustomer_Name 	= $sOrder_User_Name ; 						//  
+	 		$sCustomer_Name 	= $sOrder_User_Name ; 						//
 
-	 		$sCustomerIdentifier 	= get_post_meta($nOrder_Id, '_billing_customer_identifier', true) ; // 統一編號	
+	 		$sCustomerIdentifier 	= get_post_meta($nOrder_Id, '_billing_customer_identifier', true) ; // 統一編號
 
-	 		$sInvoice_Type		= get_post_meta($nOrder_Id, '_billing_invoice_type', true) ; 
+	 		$sInvoice_Type		= get_post_meta($nOrder_Id, '_billing_invoice_type', true) ;
 
 	 		// 捐贈
-	 		$nDonation 		= ( $sInvoice_Type == 'd' ) ? 1 : 0 ; 
+	 		$nDonation 		= ( $sInvoice_Type == 'd' ) ? 1 : 0 ;
 
 	 		$nDonation 		= (empty($sCustomerIdentifier)) ? $nDonation : 0 ; // 如果有寫統一發票號碼則無法捐贈
 
@@ -593,14 +711,14 @@ class WC_ECPayinvoice {
 	 		$nCarruerNum		= get_post_meta($nOrder_Id, '_billing_carruer_num', true) ; 		// 載具編號
 
 	 		$Invoice_Url = ($aConfig_Invoice['wc_ecpay_invoice_testmode'] == 'enable_testmode') ? 'https://einvoice-stage.ecpay.com.tw/Invoice/Issue'  : 'https://einvoice.ecpay.com.tw/Invoice/Issue' ;
-	 		
+
 
 	 		// 寫入發票資訊到備註中
 	 		$sInvoice_Info = '' ;
 	 		$sInvoice_Type_Tmp = ($sInvoice_Type == 'p') ? '個人' : ( ( $sInvoice_Type == 'd' ) ? '捐贈' : '公司') ;
 
 	 		$sInvoice_Info .= ' 發票開立 : ' . $sInvoice_Type_Tmp . '<br />';
-	 		
+
 
 	 		if($sInvoice_Type == 'c')
 	 		{
@@ -636,16 +754,16 @@ class WC_ECPayinvoice {
 				$sMsg = '' ;
 
 				$ecpay_invoice = new EcpayInvoice ;
-				
+
 				// 2.寫入基本介接參數
 				$ecpay_invoice->Invoice_Method 	= 'INVOICE' ;
 				$ecpay_invoice->Invoice_Url 	= $Invoice_Url ;
 				$ecpay_invoice->MerchantID 	= $MerchantID ;
 				$ecpay_invoice->HashKey 	= $HashKey ;
 				$ecpay_invoice->HashIV 		= $HashIV ;
-				
+
 				// 3.寫入發票相關資訊
-				
+
 				// 取得商品資訊
 				$aItems_Tmp	= array();
 				$aItems		= array();
@@ -692,11 +810,11 @@ class WC_ECPayinvoice {
 					array_push($ecpay_invoice->Send['Items'], array('ItemName' => '運費', 'ItemCount' => 1, 'ItemWord' => '式', 'ItemPrice' => $nShipping_Total, 'ItemTaxType' => 1, 'ItemAmount' => $nShipping_Total )) ;
 				}
 
-				
+
 				// 判斷測試模式
 				if($aConfig_Invoice['wc_ecpay_invoice_testmode'] == 'enable_testmode')
 				{
-					$RelateNumber = date('YmdHis') . $nOrder_Id . $nTotalSuccessTimes; 
+					$RelateNumber = date('YmdHis') . $nOrder_Id . $nTotalSuccessTimes;
 					//$RelateNumber = 'ECPAY'. date('YmdHis') . rand(1000000000,2147483647) ; // 產生測試用自訂訂單編號 // debug mode
 
 				}
@@ -728,10 +846,10 @@ class WC_ECPayinvoice {
 				$ecpay_invoice->Send['CarruerNum'] 			= $nCarruerNum ;
 				$ecpay_invoice->Send['TaxType'] 			= 1 ;
 				$ecpay_invoice->Send['SalesAmount'] 			= $nOrder_Amount_Total ;
-				$ecpay_invoice->Send['InvoiceRemark'] 			= $sInvoiceRemark ;	
+				$ecpay_invoice->Send['InvoiceRemark'] 			= $sInvoiceRemark ;
 				$ecpay_invoice->Send['InvType'] 			= '07';
 				$ecpay_invoice->Send['vat'] 				= '' ;
-				
+
 				//var_dump($ecpay_invoice->Send);
 				//exit;
 				// 4.送出
@@ -754,7 +872,7 @@ class WC_ECPayinvoice {
 			if(isset($aReturn_Info['RtnCode']) && $aReturn_Info['RtnCode'] == 1)
 			{
 				$nOrder_Invoice_Status = 1 ;  // 發票已經開立
-				
+
 				if(empty($nTotalSuccessTimes))
 				{
 					$sOrder_Invoice_Field_Name 	= '_ecpay_invoice_status' ; 	// 欄位名稱 記錄狀態
@@ -773,7 +891,7 @@ class WC_ECPayinvoice {
 				// 寫入發票號碼
 				update_post_meta($nOrder_Id, $sOrder_Invoice_Num_Field_Name, $aReturn_Info['InvoiceNumber'] );
 			}
-			
+
 			if($sMode == 'manual')
 			{
 				return 'RelateNumber=>' . $RelateNumber . print_r($aReturn_Info, true) ;
@@ -781,19 +899,6 @@ class WC_ECPayinvoice {
 	        }
 	        else
 	        {
-	     
-	   //      	if($aOrder_Info['_ecpay_invoice_status'][0] == 1)
-	   //      	{
-	   //      		if($sMode == 'manual')
-				// {
-				// 	return '發票已經完成開立，請重新整理畫面' ;
-				// }
-				// else
-				// {
-				// 	$oOrder_Obj->add_order_note('發票已經完成開立，請重新整理畫面');
-				// }
-	   //      	}
-
 	        	if($nOrder_Status != 'processing' )
 	        	{
 	        		if($sMode == 'manual')
@@ -808,7 +913,7 @@ class WC_ECPayinvoice {
 	        }
 	}
 
-	// 自動開立 
+	// 自動開立
 	function ecpay_auto_invoice($nOrder_Id, $SimulatePaid = 0)
 	{
 		global $woocommerce, $post;
@@ -840,7 +945,7 @@ class WC_ECPayinvoice {
 
 	// 作廢發票
 	function issue_invalid_invoice($nOrder_Id) {
-		
+
 		global $woocommerce, $post;
 
 		$oOrder_Obj 	= new WC_Order($nOrder_Id);
@@ -858,7 +963,7 @@ class WC_ECPayinvoice {
 	        {
 	        	// 發票號碼
 	        	$_ecpay_invoice_number = '_ecpay_invoice_number'.$nTotalSuccessTimes ;
-	 		$sInvoice_Number	= get_post_meta($nOrder_Id, $_ecpay_invoice_number, true) ; 	
+	 		$sInvoice_Number	= get_post_meta($nOrder_Id, $_ecpay_invoice_number, true) ;
 
 	 		// 取得發票介接參數設定
 	 		$aConfig_Invoice 	= get_option('wc_ecpayinvoice_active_model') ;
@@ -872,7 +977,7 @@ class WC_ECPayinvoice {
 	 		// 寫入發票資訊到備註中
 	 		$sInvoice_Info = '' ;
 	 		$sInvoice_Info .= ' 發票作廢 : ' . $sInvoice_Number . '<br />';
-	 		
+
 	 		// 寫入備註資訊
 	 		if(!empty($sInvoice_Info))
 	 		{
@@ -884,20 +989,20 @@ class WC_ECPayinvoice {
 	 		try
 			{
 				$sMsg = '' ;
-				
+
 				$ecpay_invoice = new EcpayInvoice ;
-				
+
 				// 2.寫入基本介接參數
 				$ecpay_invoice->Invoice_Method 		= 'INVOICE_VOID' ;
 				$ecpay_invoice->Invoice_Url 		= $Invoice_Url ;
 				$ecpay_invoice->MerchantID 		= $MerchantID ;
 				$ecpay_invoice->HashKey 		= $HashKey ;
 				$ecpay_invoice->HashIV 			= $HashIV ;
-				
+
 				// 3.寫入發票相關資訊
 				$ecpay_invoice->Send['InvoiceNumber'] 	= $sInvoice_Number;
 				$ecpay_invoice->Send['Reason'] 		= '發票作廢';
-				
+
 				// 4.送出
 				$aReturn_Info = $ecpay_invoice->Check_Out();
 
@@ -939,7 +1044,7 @@ class WC_ECPayinvoice {
 				update_post_meta($nOrder_Id, $sOrder_Invoice_Num_Field_Name, '');
 
 			}
-			
+
 			return 'RelateNumber=>' . $RelateNumber . print_r($aReturn_Info, true) ;
 	        }
 	        else
@@ -947,7 +1052,7 @@ class WC_ECPayinvoice {
 	        	return '發票已經完成作廢，請重新整理畫面' ;
 	        }
 	}
-	
+
 
 	/**
 	 * Return the plugin action links.  This will only be called if the plugin
@@ -1052,9 +1157,9 @@ $GLOBALS['wc_ecpayinvoice'] = wc_ecpayinvoice();
 // 開立發票 AJAX
 
 add_action( 'admin_footer', 'my_action_javascript_gen_invoice' ); // Write our JS below here
-function my_action_javascript_gen_invoice() { 
+function my_action_javascript_gen_invoice() {
 	?>
-		<script type="text/javascript">	
+		<script type="text/javascript">
 			function send_orderid_to_gen_invoice(nOrder_Id)
 			{
 				var data = {
@@ -1062,13 +1167,13 @@ function my_action_javascript_gen_invoice() {
 					'oid': nOrder_Id
 				};
 
-				jQuery.blockUI({ message: null }); 
+				jQuery.blockUI({ message: null });
 				// since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
 				jQuery.post(ajaxurl, data, function(response) {
 					alert(response);
 					location.reload();
 				});
-				
+
 			}
 		</script>
 	<?php
@@ -1089,7 +1194,7 @@ function orderid_return() {
 	}
 	else
 	{
-		echo '無法開立發票，參數傳遞錯誤。' ; 
+		echo '無法開立發票，參數傳遞錯誤。' ;
 	}
 
 	wp_die(); // this is required to terminate immediately and return a proper response
@@ -1099,12 +1204,12 @@ function orderid_return() {
 // 作費發票 AJAX
 add_action( 'admin_footer', 'my_action_javascript_issue_invalid' ); // Write our JS below here
 
-function my_action_javascript_issue_invalid() { 
+function my_action_javascript_issue_invalid() {
 	?>
-		<script type="text/javascript">	
+		<script type="text/javascript">
 			function send_orderid_to_issue_invalid(nOrder_Id)
 			{
-				
+
 				if(confirm("確定要刪除此筆發票"))
 				{
 					var data = {
@@ -1112,14 +1217,14 @@ function my_action_javascript_issue_invalid() {
 						'oid': nOrder_Id
 					};
 
-					jQuery.blockUI({ message: null }); 
-					
+					jQuery.blockUI({ message: null });
+
 					jQuery.post(ajaxurl, data, function(response) {
 						alert(response);
 						location.reload();
 					});
 				}
-				
+
 			}
 		</script>
 	<?php
@@ -1139,7 +1244,7 @@ function orderid_return_issue_invalid() {
 	}
 	else
 	{
-		echo '無法開立發票，參數傳遞錯誤。' ; 
+		echo '無法開立發票，參數傳遞錯誤。' ;
 	}
 
 	wp_die(); // this is required to terminate immediately and return a proper response

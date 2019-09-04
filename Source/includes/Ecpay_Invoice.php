@@ -220,8 +220,13 @@ if(!class_exists('ECPay_EncryptType'))
 }
 
 class EcpayInvoice
-{	
-	public $TimeStamp 	= '';			
+{
+	/**
+	 * 版本
+	 */
+	const VERSION = '1.0.190805';
+
+	public $TimeStamp 	= '';
 	public $MerchantID 	= '';
 	public $HashKey 	= '';
 	public $HashIV 		= '';
@@ -423,7 +428,7 @@ class ECPay_Invoice_Send
     			if(isset($urlencode_field[$key]))
     			{
     				$arParameters[$key] = urlencode($value);
-    				$arParameters[$key] = ECPay_CheckMacValue::Replace_Symbol($arParameters[$key]);
+    				$arParameters[$key] = ECPay_Invoice_CheckMacValue::Replace_Symbol($arParameters[$key]);
     			}
     		}
 
@@ -446,7 +451,7 @@ class ECPay_Invoice_Send
     			}
     		}
 
-    		$sCheck_MacValue = ECPay_CheckMacValue::generate($arParameters, $HashKey, $HashIV, ECPay_EncryptType::ENC_MD5);
+    		$sCheck_MacValue = ECPay_Invoice_CheckMacValue::generate($arParameters, $HashKey, $HashIV, ECPay_EncryptType::ENC_MD5);
 
     		return $sCheck_MacValue ;
     	}
@@ -478,7 +483,7 @@ class ECPay_Invoice_Send
     		{
     			if(isset($urlencode_field[$key]))
     			{
-    				$arParameters[$key] = ECPay_CheckMacValue::Replace_Symbol_Decode($arParameters[$key]);
+    				$arParameters[$key] = ECPay_Invoice_CheckMacValue::Replace_Symbol_Decode($arParameters[$key]);
     				$arParameters[$key] = urldecode($value);
     			}
     		}
@@ -738,19 +743,12 @@ class ECPay_INVOICE
           		array_push($arErrors, "11:ClearanceMark max length as 1.");
 		}
 		
-		// *請設定空字串，僅課稅類別為零稅率(Zero)時，此參數不可為空字串
-		if ($arParameters['TaxType'] == EcpayTaxType::Zero)
+		// *課稅類別為零稅率(Zero)或課稅類別為混合稅率(Mix)且商品課稅別存在零稅率時，此參數不可為空字串
+		if ($arParameters['TaxType'] == EcpayTaxType::Zero || ($arParameters['TaxType'] == EcpayTaxType::Mix && strpos($arParameters['ItemTaxType'], EcpayTaxType::Zero) !== false))
 		{
 			if ( ( $arParameters['ClearanceMark'] != EcpayClearanceMark::Yes ) && ( $arParameters['ClearanceMark'] != EcpayClearanceMark::No ) )
 			{
 				array_push($arErrors, "11:ClearanceMark is required.");
-			}
-		}
-		else
-		{
-			if (strlen($arParameters['ClearanceMark']) > 0)
-			{
-				array_push($arErrors, "11:Please remove ClearanceMark.");
 			}
 		}
 
@@ -861,9 +859,9 @@ class ECPay_INVOICE
                           	}
 			break;
       
-      			// *載具類別為買受人手機條碼(Cellphone)時，請設定手機條碼，第1碼為「/」，後7碼為大小寫英文、數字、「+」、「-」或「.」
+      			// *載具類別為買受人手機條碼(Cellphone)時，請設定手機條碼，第1碼為「/」，後7碼為大寫英文、數字、「+」、「-」或「.」
       			case EcpayCarruerType::Cellphone:
-				if ( !preg_match('/^\/{1}[0-9a-zA-Z+-.]{7}$/', $arParameters['CarruerNum']) )
+				if ( !preg_match('/^\/{1}[0-9A-Z+-.]{7}$/', $arParameters['CarruerNum']) )
 				{
 					array_push($arErrors, "16:Invalid CarruerNum.");
 				}
@@ -1016,10 +1014,38 @@ class ECPay_INVOICE
 
 
 	        		// *檢查商品總金額
-				if ( $arParameters['SalesAmount'] != round($nCheck_Amount))
-				{
-					array_push($arErrors, "18.2:Invalid SalesAmount.");
-				}	
+					if ( $arParameters['SalesAmount'] != round($nCheck_Amount))
+					{
+						array_push($arErrors, "18.2:Invalid SalesAmount.");
+					}
+
+					// *檢查商品課稅別
+
+					// 課稅類別為混合稅率時
+					if ($arParameters['TaxType'] == EcpayTaxType::Mix)
+					{
+						$ItemTaxType = explode("|", $arParameters['ItemTaxType']);
+						// 商品課稅別不可為空
+						if(empty($arParameters['ItemTaxType']))
+						{
+							array_push($arErrors, "24:ItemTaxType is required.");
+						}
+						// 需含二筆或以上的商品課稅別
+						if ( count($ItemTaxType) < 2)
+						{
+							array_push($arErrors, "24:ItemTaxType should be more than 2.");
+						}
+
+						// 免稅和零稅率發票不能同時開立
+						// 只能有兩種情形 :
+						// 1.應稅+免稅
+						// 2.應稅+零稅率
+						$items = array_unique($ItemTaxType);
+						if ( count($items) != 2 || !in_array(1, $items))
+						{
+							array_push($arErrors, "24:ItemTaxType error.");
+						}
+					}
 	        	}
 	        }
 
@@ -1316,20 +1342,13 @@ class ECPay_INVOICE_DELAY
 		{
           		array_push($arErrors, "11:ClearanceMark max length as 1.");
 		}
-		
-		// *請設定空字串，僅課稅類別為零稅率(Zero)時，此參數不可為空字串
-		if ($arParameters['TaxType'] == EcpayTaxType::Zero)
+
+		// *課稅類別為零稅率(Zero)或課稅類別為混合稅率(Mix)且商品課稅別存在零稅率時，此參數不可為空字串
+		if ($arParameters['TaxType'] == EcpayTaxType::Zero || ($arParameters['TaxType'] == EcpayTaxType::Mix && strpos($arParameters['ItemTaxType'], EcpayTaxType::Zero) !== false))
 		{
 			if ( ( $arParameters['ClearanceMark'] != EcpayClearanceMark::Yes ) && ( $arParameters['ClearanceMark'] != EcpayClearanceMark::No ) )
 			{
 				array_push($arErrors, "11:ClearanceMark is required.");
-			}
-		}
-		else
-		{
-			if (strlen($arParameters['ClearanceMark']) > 0)
-			{
-				array_push($arErrors, "11:Please remove ClearanceMark.");
 			}
 		}
 
@@ -1428,9 +1447,9 @@ class ECPay_INVOICE_DELAY
                           	}
 			break;
       
-      			// *載具類別為買受人手機條碼(Cellphone)時，請設定手機條碼，第1碼為「/」，後7碼為大小寫英文、數字、「+」、「-」或「.」
+      			// *載具類別為買受人手機條碼(Cellphone)時，請設定手機條碼，第1碼為「/」，後7碼為大寫英文、數字、「+」、「-」或「.」
       			case EcpayCarruerType::Cellphone:
-				if ( !preg_match('/^\/{1}[0-9a-zA-Z+-.]{7}$/', $arParameters['CarruerNum']) )
+				if ( !preg_match('/^\/{1}[0-9A-Z+-.]{7}$/', $arParameters['CarruerNum']) )
 				{
 					array_push($arErrors, "16:Invalid CarruerNum.");
 				}
@@ -1560,10 +1579,37 @@ class ECPay_INVOICE_DELAY
 	        		}
 
 	        		// *檢查商品總金額
-				if ( $arParameters['SalesAmount'] != round($nCheck_Amount))
-				{
-					array_push($arErrors, "18.2:Invalid SalesAmount.");
-				}	
+					if ( $arParameters['SalesAmount'] != round($nCheck_Amount))
+					{
+						array_push($arErrors, "18.2:Invalid SalesAmount.");
+					}
+
+					// *檢查商品課稅別
+					// 課稅類別為混合稅率時
+					if ($arParameters['TaxType'] == EcpayTaxType::Mix)
+					{
+						$ItemTaxType = explode("|", $arParameters['ItemTaxType']);
+
+						// 商品課稅別不可為空
+						if(empty($arParameters['ItemTaxType']))
+						{
+							array_push($arErrors, "24:ItemTaxType is required.");
+						}
+						// 需含二筆或以上的商品課稅別
+						if ( count($ItemTaxType) < 2)
+						{
+							array_push($arErrors, "24:ItemTaxType should be more than 2.");
+						}
+						// 免稅和零稅率發票不能同時開立
+						// 只能有兩種情形 :
+						// 1.應稅+免稅
+						// 2.應稅+零稅率
+						$items = array_unique($ItemTaxType);
+						if ( count($items) != 2 || !in_array(1, $items))
+						{
+							array_push($arErrors, "24:ItemTaxType error.");
+						}
+					}
 	        	}
 	        }
 
@@ -2250,6 +2296,11 @@ class ECPay_INVOICE_SEARCH
 			$arParameters['IIS_Customer_Email'] = str_replace('+',' ',$arParameters['IIS_Customer_Email']);
 		}
 
+		if(isset($arParameters['IIS_Carruer_Num']))
+		{
+			$arParameters['IIS_Carruer_Num'] = str_replace('+',' ',$arParameters['IIS_Carruer_Num']);
+		}
+
 		return $arParameters ;
     	}   
 }
@@ -2891,12 +2942,12 @@ class ECPay_CHECK_LOVE_CODE
 }
 
 
-if(!class_exists('ECPay_CheckMacValue'))
+if(!class_exists('ECPay_Invoice_CheckMacValue'))
 {
 	/**
 	*  檢查碼
 	*/
-	class ECPay_CheckMacValue
+	class ECPay_Invoice_CheckMacValue
 	{
 		/**
 		* 產生檢查碼
@@ -2908,7 +2959,7 @@ if(!class_exists('ECPay_CheckMacValue'))
 			if(isset($arParameters)){
 				
                 		unset($arParameters['CheckMacValue']);
-				uksort($arParameters, array('ECPay_CheckMacValue','merchantSort'));
+				uksort($arParameters, array('ECPay_Invoice_CheckMacValue','merchantSort'));
 
 				// 組合字串
 				$sMacValue = 'HashKey=' . $HashKey ;
@@ -2926,8 +2977,8 @@ if(!class_exists('ECPay_CheckMacValue'))
 				$sMacValue = strtolower($sMacValue);
 
 				// 取代為與 dotNet 相符的字元
-				$sMacValue = ECPay_CheckMacValue::Replace_Symbol($sMacValue);
-			                
+				$sMacValue = ECPay_Invoice_CheckMacValue::Replace_Symbol($sMacValue);
+
 				// 編碼
 				switch ($encType)
 				{
