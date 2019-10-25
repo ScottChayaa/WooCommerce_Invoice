@@ -1,14 +1,14 @@
 <?php
 /**
  * @copyright Copyright (c) 2016 Green World FinTech Service Co., Ltd. (https://www.ecpay.com.tw)
- * @version 1.1.190916
+ * @version 1.1.1910210
  *
  * Plugin Name: ECPay Invoice for WooCommerce
  * Plugin URI: https://www.ecpay.com.tw
  * Description: ECPay Invoice For WooCommerce
  * Author: ECPay Green World FinTech Service Co., Ltd.
  * Author URI: https://www.ecpay.com.tw
- * Version: 1.1.190916
+ * Version: 1.1.1910210
  * Text Domain: woocommerce-ecpayinvoice
  * Domain Path: /i18n/languages/
  */
@@ -25,7 +25,7 @@ class WC_ECPayInvoice
 {
 
     /** plugin version number */
-    const VERSION = 'v.1.1.190916';
+    const VERSION = 'v.1.1.1910210';
 
     /** 功能開關 */
     public $my_custom_features_switch;
@@ -48,7 +48,7 @@ class WC_ECPayInvoice
         }
 
         // 前台統一編號 載具資訊填寫
-        add_filter( 'woocommerce_checkout_fields', array(&$this, 'ecpay_invoice_info_fields' ));
+        add_filter( 'woocommerce_checkout_fields', array(&$this, 'ecpay_invoice_info_fields' ),10 ,1);
 
         // 發票自動開立程序(需綁ECPAY金流)
         add_action('ecpay_auto_invoice', array(&$this, 'ecpay_auto_invoice' ),10 ,3);
@@ -107,10 +107,27 @@ class WC_ECPayInvoice
         wp_enqueue_script('plugin_ecpay_invoice_frontend_script');
 
         //
+
+        // 載具資訊
+        $fields['billing']['billing_carruer_type'] = [
+            'type'      => 'select',
+            'label'         => '載具類別',
+            'required'      => false,
+            'priority'      => 200,
+            'options'   => [
+                '0' => '索取紙本',
+                '1' => '雲端發票(中獎寄送紙本)',
+                '2' => '自然人憑證',
+                '3' => '手機條碼'
+            ]
+            
+        ];
+
         $fields['billing']['billing_invoice_type'] = [
             'type'          => 'select',
             'label'         => '發票開立',
             'required'      => false,
+            'priority'      => 210,
             'options'   => [
                 'p' => '個人',
                 'c' => '公司',
@@ -119,35 +136,29 @@ class WC_ECPayInvoice
         ];
 
         $fields['billing']['billing_customer_identifier'] = [
-            'type'      => 'text',
+            'type'          => 'text',
             'label'         => '統一編號',
-            'required'      => false
+            'required'      => false,
+            'priority'      => 220,
         ];
+
+
 
         $fields['billing']['billing_love_code'] = [
-            'type'      => 'text',
+            'type'          => 'text',
             'label'         => '捐贈碼',
-            'desc_tip'    => true,
-            'required'      => false
+            'desc_tip'      => true,
+            'required'      => false,
+            'priority'      => 230,
         ];
 
-        // 載具資訊
-        $fields['billing']['billing_carruer_type'] = [
-            'type'      => 'select',
-            'label'         => '載具類別',
-            'required'      => false,
-            'options'   => [
-                '0' => '索取紙本',
-                '1' => '雲端發票(中獎寄送紙本)',
-                '2' => '自然人憑證',
-                '3' => '手機條碼'
-            ]
-        ];
+        
 
         $fields['billing']['billing_carruer_num'] = [
-            'type'      => 'text',
+            'type'          => 'text',
             'label'         => '載具編號',
-            'required'      => false
+            'required'      => false,
+            'priority'      => 240,
         ];
 
         return $fields;
