@@ -47,6 +47,7 @@ $( document ).ready(function() {
 
             $("#billing_customer_identifier").val("");
             $("#billing_carruer_num").val("");
+            $("#billing_carruer_type").val("0");
 
             if($("#billing_love_code").val() == '') {
                  $("#billing_love_code").val("168001");            // 捐贈碼

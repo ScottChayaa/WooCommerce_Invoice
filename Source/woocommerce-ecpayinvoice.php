@@ -1,19 +1,22 @@
 <?php
 /**
  * @copyright Copyright (c) 2016 Green World FinTech Service Co., Ltd. (https://www.ecpay.com.tw)
- * @version 1.1.1910210
+ * @version 1.1.2002130
  *
  * Plugin Name: ECPay Invoice for WooCommerce
  * Plugin URI: https://www.ecpay.com.tw
  * Description: ECPay Invoice For WooCommerce
+ * Version: 1.1.2002130
  * Author: ECPay Green World FinTech Service Co., Ltd.
  * Author URI: https://www.ecpay.com.tw
- * Version: 1.1.1910210
- * Text Domain: woocommerce-ecpayinvoice
- * Domain Path: /i18n/languages/
+ * License: GPLv2
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.txt
+ * WC requires at least: 3
+ * WC tested up to: 3.9.1
  */
 
 defined( 'ABSPATH' ) or exit;
+define( 'ECPAY_INVOICE_PLUGIN_VERSION', '1.1.2002130' );
 
 // include Invoice SDK
 require_once( 'Ecpay_Invoice_Shell.php' );
@@ -23,10 +26,6 @@ require_once( 'Ecpay_Invoice_Shell.php' );
  */
 class WC_ECPayInvoice
 {
-
-    /** plugin version number */
-    const VERSION = 'v.1.1.1910210';
-
     /** 功能開關 */
     public $my_custom_features_switch;
 
@@ -67,7 +66,7 @@ class WC_ECPayInvoice
     |--------------------------------------------------------------------------
     | 前端
     |--------------------------------------------------------------------------
-    | 
+    |
     */
 
     /**
@@ -82,7 +81,7 @@ class WC_ECPayInvoice
 
         // 啟動則自動開立
         if($configInvoice['wc_ecpay_invoice_auto'] == 'auto') {
-            
+
             // 判斷是否為模擬觸發
             if($SimulatePaid == 0) {
                 // 非模擬觸發
@@ -103,7 +102,7 @@ class WC_ECPayInvoice
     public function ecpay_invoice_info_fields($fields)
     {
         // 載入相關JS
-        wp_register_script('plugin_ecpay_invoice_frontend_script', plugins_url('/js/ecpay_invoice_frontend.js', __FILE__), array('jquery'),'1.1', true);
+        wp_register_script('plugin_ecpay_invoice_frontend_script', plugins_url('/js/ecpay_invoice_frontend.js', __FILE__), array('jquery'),ECPAY_INVOICE_PLUGIN_VERSION, true);
         wp_enqueue_script('plugin_ecpay_invoice_frontend_script');
 
         //
@@ -120,7 +119,7 @@ class WC_ECPayInvoice
                 '2' => '自然人憑證',
                 '3' => '手機條碼'
             ]
-            
+
         ];
 
         $fields['billing']['billing_invoice_type'] = [
@@ -152,7 +151,7 @@ class WC_ECPayInvoice
             'priority'      => 230,
         ];
 
-        
+
 
         $fields['billing']['billing_carruer_num'] = [
             'type'          => 'text',
@@ -187,15 +186,15 @@ class WC_ECPayInvoice
 
         // 統一編號格式判斷
         if( isset($_POST['billing_invoice_type']) && sanitize_text_field($_POST['billing_invoice_type']) == 'c' && sanitize_text_field($_POST['billing_customer_identifier']) != '' ) {
-            
-            if( !preg_match('/^[0-9]{8}$/', sanitize_text_field($_POST['billing_customer_identifier'])) ) {  
+
+            if( !preg_match('/^[0-9]{8}$/', sanitize_text_field($_POST['billing_customer_identifier'])) ) {
                 wc_add_notice( __( '統一編號格式錯誤' ), 'error' );
             }
         }
 
         // 捐贈碼格式判斷
         if( isset($_POST['billing_invoice_type']) && sanitize_text_field($_POST['billing_invoice_type']) == 'd' && sanitize_text_field($_POST['billing_love_code']) != '' ) {
-            
+
             if( !preg_match('/^([xX]{1}[0-9]{2,6}|[0-9]{3,7})$/', sanitize_text_field($_POST['billing_love_code'])) ) {
                 wc_add_notice( __( '捐贈碼格式錯誤' ), 'error' );
 
@@ -203,7 +202,7 @@ class WC_ECPayInvoice
 
                 // 呼叫SDK 捐贈碼驗證
                 if($this->my_custom_features_switch['billing_love_code_api_check']) {
-                    
+
                     try {
 
                         // 1.載入SDK程式
@@ -246,7 +245,7 @@ class WC_ECPayInvoice
 
         // 自然人憑證格式判斷
         if( isset($_POST['billing_carruer_type']) && sanitize_text_field($_POST['billing_carruer_type']) == '2' && sanitize_text_field($_POST['billing_carruer_num']) != '' ) {
-            
+
             if( !preg_match('/^[a-zA-Z]{2}\d{14}$/', sanitize_text_field($_POST['billing_carruer_num'])) ) {
                 wc_add_notice( __( '自然人憑證格式錯誤' ), 'error' );
             }
@@ -254,15 +253,15 @@ class WC_ECPayInvoice
 
         // 手機載具格式判斷
         if( isset($_POST['billing_carruer_type']) && sanitize_text_field($_POST['billing_carruer_type']) == '3' && sanitize_text_field($_POST['billing_carruer_num']) != '' ) {
-            
+
             if( !preg_match('/^\/{1}[0-9a-zA-Z+-.]{7}$/', sanitize_text_field($_POST['billing_carruer_num'])) ) {
                 wc_add_notice( __( '手機條碼載具格式錯誤' ), 'error' );
-            
+
             } else {
 
                 // 呼叫SDK 手機條碼驗證
                 if($this->my_custom_features_switch['billing_carruer_num_api_check']) {
-                    
+
                     try {
 
                         // 1.載入SDK程式
@@ -308,7 +307,7 @@ class WC_ECPayInvoice
     |--------------------------------------------------------------------------
     | 後端
     |--------------------------------------------------------------------------
-    | 
+    |
     */
 
     /**
@@ -316,7 +315,7 @@ class WC_ECPayInvoice
     */
     function add_ajax_actions()
     {
-        // 作廢發票 
+        // 作廢發票
         add_action( 'wp_ajax_my_action2', array($this, 'orderid_return_issue_invalid' ) );
 
         // 開立發票
@@ -351,9 +350,9 @@ class WC_ECPayInvoice
             echo '無法開立發票，參數傳遞錯誤。' ;
         }
 
-        wp_die(); 
+        wp_die();
     }
- 
+
     /**
     * 後端接收作廢發票請求
     */
@@ -400,7 +399,7 @@ class WC_ECPayInvoice
 
                 $_ecpay_invoice_status = '_ecpay_invoice_status'.$totalSuccessTimes ;
 
-                if( ( !isset($orderInfo[$_ecpay_invoice_status][0]) || $orderInfo[$_ecpay_invoice_status][0] == 0 ) && $orderStatus == 'processing' ) { 
+                if( ( !isset($orderInfo[$_ecpay_invoice_status][0]) || $orderInfo[$_ecpay_invoice_status][0] == 0 ) && $orderStatus == 'processing' ) {
                         $invoiceEnable = true ;
                 }
 
@@ -408,7 +407,7 @@ class WC_ECPayInvoice
 
                 // 判斷超商取貨付款
                 if( $orderInfo['_payment_method'][0] == 'ecpay_shipping_pay' ) {
-                    
+
                     if( ( !isset($orderInfo['_ecpay_invoice_status'][0]) || $orderInfo['_ecpay_invoice_status'][0] == 0 ) && ( $orderStatus == 'ecpay' || $orderStatus == 'on-hold' ) ) {
                         $invoiceEnable = true ;
                     }
@@ -418,13 +417,13 @@ class WC_ECPayInvoice
                     if( ( !isset($orderInfo['_ecpay_invoice_status'][0]) || $orderInfo['_ecpay_invoice_status'][0] == 0 ) && $orderStatus == 'processing' ) {
                         $invoiceEnable = true ;
                     }
-                }   
+                }
             }
 
         } elseif($mode == 'auto') {
 
             if( ( !isset($orderInfo['_payment_method'][0]) || $orderInfo['_payment_method'][0] == 'allpay_dca' ) || $orderInfo['_payment_method'][0] == 'ecpay_dca' ) {
-                
+
                 $_ecpay_invoice_status = '_ecpay_invoice_status'.$totalSuccessTimes ;
 
                 if( ( !isset($orderInfo[$_ecpay_invoice_status][0]) || $orderInfo[$_ecpay_invoice_status][0] == 0 )) {
@@ -432,8 +431,8 @@ class WC_ECPayInvoice
                 }
 
             } else {
-                
-                if( ( !isset($orderInfo['_ecpay_invoice_status'][0]) || $orderInfo['_ecpay_invoice_status'][0] == 0 )) {    
+
+                if( ( !isset($orderInfo['_ecpay_invoice_status'][0]) || $orderInfo['_ecpay_invoice_status'][0] == 0 )) {
                     $invoiceEnable = true ;
                 }
             }
@@ -453,11 +452,11 @@ class WC_ECPayInvoice
             $orderAmountTotal   = $orderObj->get_total();                       // 訂單總金額
             $orderInfo          = $orderObj->get_address();                     // 訂單地址與電話
 
-            $orderAddress       = $orderInfo['country'] . $orderInfo['city'] . $orderInfo['state'] . $orderInfo['address_1']. $orderInfo['address_2'] ; //  地址
-            $orderUserName      = $orderInfo['first_name'] . $orderInfo['last_name'] ;  // 購買人
+            $orderAddress       = $orderInfo['country'] . $orderInfo['state'] . $orderInfo['city'] . $orderInfo['address_1']. $orderInfo['address_2'] ; //  地址
+            $orderUserName      = $orderInfo['last_name'] . $orderInfo['first_name'] ;  // 購買人
             $orderEmail         = $orderInfo['email'] ;                     // EMAIL
             $orderPhone         = $orderInfo['phone'] ;                     // Phone
-            $customerName       = $orderUserName ;                      
+            $customerName       = $orderUserName ;
 
             $customerIdentifier = get_post_meta($orderId, '_billing_customer_identifier', true) ; // 統一編號
             $invoiceType        = get_post_meta($orderId, '_billing_invoice_type', true) ;
@@ -468,7 +467,7 @@ class WC_ECPayInvoice
 
             // 有打統一編號 強制列印
             if( !empty($customerIdentifier) ) {
-                
+
                 $print = 1 ;
 
                 // 有統一編號 則取得公司名稱
@@ -482,13 +481,13 @@ class WC_ECPayInvoice
 
             // 無載具 強制列印
             if(empty($carruerType) ) {
-                
+
                 $print = 1 ;
             }
 
             // 有捐贈項目 不允許列印
             if($donation == 1 ) {
-                
+
                 $print = 0 ;
             }
 
@@ -529,7 +528,7 @@ class WC_ECPayInvoice
 
             // 呼叫SDK 開立發票
             try {
-                
+
                 $msg = '' ;
 
                 $ecpayInvoice = new ECPay_Woo_EcpayInvoice ;
@@ -561,7 +560,7 @@ class WC_ECPayInvoice
                     foreach($itemsTmp as $key1 => $value1) {
                         $items[$key1]['ItemName'] = $value1['name']; // 商品名稱 ItemName
                         $items[$key1]['ItemCount'] = isset($value1['item_meta']['_quantity'][0]) ? $value1['item_meta']['_quantity'][0] : '' ; // 數量 ItemCount
-                        
+
                         if(empty($items[$key1]['ItemCount'])) {
 
                             $items[$key1]['ItemCount'] = isset($value1['item_meta']['_qty'][0]) ? $value1['item_meta']['_qty'][0] : '' ; // 數量 ItemCount
@@ -572,7 +571,7 @@ class WC_ECPayInvoice
                 }
 
                 foreach($items as $key2 => $value2) {
-                    
+
                     // 商品資訊
                     array_push($ecpayInvoice->Send['Items'], array('ItemName' => $value2['ItemName'], 'ItemCount' => $value2['ItemCount'], 'ItemWord' => '批', 'ItemPrice' => $value2['ItemPrice'], 'ItemTaxType' => 1, 'ItemAmount' => $value2['ItemAmount']  )) ;
                 }
@@ -594,7 +593,7 @@ class WC_ECPayInvoice
 
                 // 判斷是否信用卡後四碼欄位有值，如果有值則寫入備註中
                 $card4no = get_post_meta($orderId, 'card4no', true);    // 信用卡後四碼
-                
+
                 if(!empty($card4no)) {
                     $invoiceRemark .= $card4no ;
                 }
@@ -688,7 +687,7 @@ class WC_ECPayInvoice
         $_ecpay_invoice_status = '_ecpay_invoice_status'.$totalSuccessTimes ;
 
         if( isset($orderInfo[$_ecpay_invoice_status][0]) && $orderInfo[$_ecpay_invoice_status][0] == 1 ) {
-            
+
             // 發票號碼
             $_ecpay_invoice_number = '_ecpay_invoice_number'.$totalSuccessTimes ;
             $invoiceNumber  = get_post_meta($orderId, $_ecpay_invoice_number, true) ;
@@ -717,7 +716,7 @@ class WC_ECPayInvoice
 
             // 呼叫SDK 作廢發票
             try {
-                
+
                 $msg = '' ;
 
                 $ecpayInvoice = new ECPay_Woo_EcpayInvoice ;
@@ -737,7 +736,7 @@ class WC_ECPayInvoice
                 $returnInfo = $ecpayInvoice->Check_Out();
 
             } catch (Exception $e) {
-                
+
                 // 例外錯誤處理。
                 $msg = $e->getMessage();
             }
@@ -801,27 +800,27 @@ class WC_ECPayInvoice
         // 判斷是否啟動模組
         if($configInvoice['wc_ecpay_invoice_enabled'] == 'enable') {
             $_ecpay_invoice_status = '_ecpay_invoice_status'.$totalSuccessTimes ;
-            
+
             if($configInvoice['wc_ecpay_invoice_auto'] == 'manual') {
-                
+
                 // 尚未開立發票
                 if( !isset($orderInfo[$_ecpay_invoice_status][0]) || $orderInfo[$_ecpay_invoice_status][0] == 0 ) {
-                    
+
                     // 判斷付款方式
                     if($orderInfo['_payment_method'][0] == 'ecpay_shipping_pay') {
-                        
+
                         // 貨到付款 訂單產生就出現按鈕
                         if( $orderStatus == 'ecpay' || $orderStatus == 'on-hold') {
                             $genInvoice = true ;
                         }
 
                     } else {
-                        
+
                         if( $orderStatus == 'processing') {
                             $genInvoice = true ;
                         }
-                    }   
-                }      
+                    }
+                }
             }
 
             // 產生按鈕
