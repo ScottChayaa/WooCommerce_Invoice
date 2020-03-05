@@ -1,22 +1,22 @@
 <?php
 /**
  * @copyright Copyright (c) 2016 Green World FinTech Service Co., Ltd. (https://www.ecpay.com.tw)
- * @version 1.1.2002130
+ * @version 1.1.2003020
  *
  * Plugin Name: ECPay Invoice for WooCommerce
  * Plugin URI: https://www.ecpay.com.tw
  * Description: ECPay Invoice For WooCommerce
- * Version: 1.1.2002130
+ * Version: 1.1.2003020
  * Author: ECPay Green World FinTech Service Co., Ltd.
  * Author URI: https://www.ecpay.com.tw
  * License: GPLv2
  * License URI: https://www.gnu.org/licenses/gpl-2.0.txt
  * WC requires at least: 3
- * WC tested up to: 3.9.1
+ * WC tested up to: 3.9.2
  */
 
 defined( 'ABSPATH' ) or exit;
-define( 'ECPAY_INVOICE_PLUGIN_VERSION', '1.1.2002130' );
+define( 'ECPAY_INVOICE_PLUGIN_VERSION', '1.1.2003020' );
 
 // include Invoice SDK
 require_once( 'Ecpay_Invoice_Shell.php' );

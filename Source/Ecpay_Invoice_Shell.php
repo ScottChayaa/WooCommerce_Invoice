@@ -11,12 +11,24 @@ final class ECPay_Woo_EcpayInvoice extends EcpayInvoice
     }
 }
 
+/**
+ * cURL 設定值
+ */
+abstract class Ecpay_Woo_Invoice_Curl {
+
+    /**
+     * @var int 逾時時間
+     */
+    const TIMEOUT = 30;
+
+}
+
 class Ecpay_Woo_Invoice_Send extends ECPay_Invoice_Send
 {
     /**
      * Server Post
      *
-     * @param     array    $Params        Post 參數
+     * @param     array    $parameters    Post 參數
      * @param     string   $ServiceURL    Post URL
      * @return    void
      */
@@ -26,7 +38,7 @@ class Ecpay_Woo_Invoice_Send extends ECPay_Invoice_Send
 
         // 組合字串
         foreach($parameters as $key => $value) {
-            
+
             if( $sSend_Info == '') {
                 $sSend_Info .= $key . '=' . $value ;
             }  else {
@@ -34,9 +46,9 @@ class Ecpay_Woo_Invoice_Send extends ECPay_Invoice_Send
             }
         }
 
-        // $fields_string = http_build_query($Params);
         $rs = wp_remote_post($ServiceURL, array(
             'method'      => 'POST',
+            'timeout'     => Ecpay_Woo_Invoice_Curl::TIMEOUT,
             'headers'     => false,
             'httpversion' => '1.0',
             'sslverify'   => true,
