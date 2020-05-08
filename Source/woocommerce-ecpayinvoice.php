@@ -112,21 +112,19 @@ class WC_ECPayInvoice
             'type'      => 'select',
             'label'         => '載具類別',
             'required'      => false,
-            'priority'      => 200,
+            'priority'      => 210,
             'options'   => [
-                '0' => '索取紙本',
-                '1' => '雲端發票(中獎寄送紙本)',
-                '2' => '自然人憑證',
+                '1' => '雲端發票',
                 '3' => '手機條碼'
-            ]
-
+            ],
+            'default' => 1
         ];
 
         $fields['billing']['billing_invoice_type'] = [
             'type'          => 'select',
             'label'         => '發票開立',
             'required'      => false,
-            'priority'      => 210,
+            'priority'      => 200,
             'options'   => [
                 'p' => '個人',
                 'c' => '公司',
