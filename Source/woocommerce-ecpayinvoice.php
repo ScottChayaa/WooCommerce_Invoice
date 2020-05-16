@@ -115,7 +115,9 @@ class WC_ECPayInvoice
             'priority'      => 210,
             'options'   => [
                 '1' => '雲端發票',
-                '3' => '手機條碼'
+                // '2' => '自然人憑證',
+                '3' => '手機條碼',
+                '0' => '索取紙本',
             ],
             'default' => 1
         ];
@@ -129,7 +131,8 @@ class WC_ECPayInvoice
                 'p' => '個人',
                 'c' => '公司',
                 'd' => '捐贈'
-            ]
+            ],
+            'default' => 'p'
         ];
 
         $fields['billing']['billing_customer_identifier'] = [
