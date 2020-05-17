@@ -8,12 +8,9 @@ $( document ).ready(function() {
     $("#billing_carruer_num").val("");              // 載具編號
     $("#billing_invoice_type").val("p");            // 發票開立類型
     $("#billing_carruer_type").val("1");            // 載具類別
-    $("#billing_carruer_type").change();
 
     invoice_type = $("#billing_invoice_type").val();
     carruer_type = $("#billing_carruer_type").val();
-
-    console.log(`${invoice_type}, ${carruer_type}`);
 
     $("#billing_customer_identifier_field").hide();
     $("#billing_love_code_field").hide();
@@ -21,6 +18,8 @@ $( document ).ready(function() {
     $("#billing_carruer_type_field").show();
 
     $("#billing_invoice_type").change(function() {
+        console.log('billing_invoice_type onchange');
+
         invoice_type = $("#billing_invoice_type").val();
 
         if (invoice_type == 'p') {
@@ -96,7 +95,6 @@ $( document ).ready(function() {
 
             $('#carruer_hint').hide();
         } else if (carruer_type == 1) {
-
             $("#billing_carruer_num_field").hide();
             $("#billing_carruer_num").val("");
 
@@ -140,4 +138,6 @@ $( document ).ready(function() {
         $('#billing_carruer_num_field').remove();
     }
 
+    // 加在最後面才會觸發上面已定義好的 onchange 的動作
+    $("#billing_invoice_type").change();
 });
