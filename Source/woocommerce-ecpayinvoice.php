@@ -135,14 +135,19 @@ class WC_ECPayInvoice
             'default' => 'p'
         ];
 
+        $fields['billing']['billing_customer_title'] = [
+            'type'          => 'text',
+            'label'         => '發票抬頭',
+            'required'      => false,
+            'priority'      => 219,
+        ];
+
         $fields['billing']['billing_customer_identifier'] = [
             'type'          => 'text',
             'label'         => '統一編號',
             'required'      => false,
             'priority'      => 220,
         ];
-
-
 
         $fields['billing']['billing_love_code'] = [
             'type'          => 'text',
@@ -151,8 +156,6 @@ class WC_ECPayInvoice
             'required'      => false,
             'priority'      => 230,
         ];
-
-
 
         $fields['billing']['billing_carruer_num'] = [
             'type'          => 'text',

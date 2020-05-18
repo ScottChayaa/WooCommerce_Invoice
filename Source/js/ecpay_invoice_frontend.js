@@ -25,10 +25,12 @@ $( document ).ready(function() {
         if (invoice_type == 'p') {
 
             $("#billing_customer_identifier_field").hide();
+            $("#billing_customer_title_field").hide();
             $("#billing_love_code_field").hide();
             $("#billing_carruer_type_field").show();
 
             $("#billing_customer_identifier").val("");
+            $("#billing_customer_title").val("");
             $("#billing_love_code").val("");
             $("#billing_carruer_type").val("1");
             $("#billing_carruer_type").change();
@@ -43,6 +45,7 @@ $( document ).ready(function() {
         } else if (invoice_type == 'c') {
 
             $("#billing_customer_identifier_field").show();
+            $("#billing_customer_title_field").show();
             $("#billing_love_code_field").hide();
             $("#billing_carruer_num_field").hide();
             $("#billing_carruer_type_field").hide();
@@ -58,11 +61,13 @@ $( document ).ready(function() {
         } else if (invoice_type == 'd') {
 
             $("#billing_customer_identifier_field").hide();
+            $("#billing_customer_title_field").hide();
             $("#billing_love_code_field").show();
             $("#billing_carruer_num_field").hide();
             $("#billing_carruer_type_field").hide();
 
             $("#billing_customer_identifier").val("");
+            $("#billing_customer_title").val("");
             $("#billing_carruer_num").val("");
             $("#billing_carruer_type").val("0");
             $("#billing_carruer_type").change();
@@ -81,8 +86,6 @@ $( document ).ready(function() {
         console.log('billing_carruer_type onchange');
 
         carruer_type = $("#billing_carruer_type").val();
-        invoice_type = $("#billing_invoice_type").val();
-        identifier = $("#billing_customer_identifier").val();
 
         // 無載具
         if (carruer_type == 0) {
