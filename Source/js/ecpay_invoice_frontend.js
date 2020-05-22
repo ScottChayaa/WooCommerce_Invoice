@@ -2,7 +2,10 @@
 var $ = jQuery.noConflict();
 
 $( document ).ready(function() {
-
+    if (typeof $ == 'undefined') {
+        var $ = jQuery;
+    }
+    
     $("#billing_love_code").val("");            // 捐贈碼
     $("#billing_customer_identifier").val("");      // 統一編號
     $("#billing_carruer_num").val("");              // 載具編號
@@ -139,6 +142,11 @@ $( document ).ready(function() {
         $('#billing_customer_identifier_field').remove();
         $('#billing_love_code_field').remove();
         $('#billing_carruer_num_field').remove();
+        
+        $("#billing_address_1_field").hide();
+        $("#billing_address_1").val("請填入地址");
+
+        $('#billing_customer_title_field').remove();
     }
 
     // 加在最後面才會觸發上面已定義好的 onchange 的動作
